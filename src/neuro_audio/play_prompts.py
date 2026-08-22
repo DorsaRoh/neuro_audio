@@ -285,32 +285,7 @@ def _print_prompt(index: int, name: str, prompt: str, n: int, total: int) -> Non
     console.print(Panel(prompt, title=title, title_align="left"))
 
 
-def main(argv: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(
-        description="Generate and play a Stable Audio Open clip for one of the 16 emotion prompts.",
-        usage="uv run play-prompts [-h] [--list] [--no-play] [--force] 1-16",
-    )
-    parser.add_argument(
-        "prompts",
-        nargs="*",
-        metavar="N",
-        help='prompt number 1–16, a name, or "all"',
-    )
-    parser.add_argument("--list", action="store_true", help="print the 16 prompts and exit")
-    parser.add_argument("--no-play", action="store_true", help="generate/save wavs, do not play")
-    parser.add_argument("--force", action="store_true", help="regenerate even if a matching wav exists")
-    args = parser.parse_args(argv)
-
-    if args.list or not args.prompts:
-        _print_menu()
-        if not args.prompts and not args.list:
-            raise SystemExit("pass a prompt number, e.g. uv run play-prompts 5")
-        return
-
-    selection = resolve_selection(args.prompts)
-    play_audio = PLAY_AUDIO and not args.no_play
-    force = FORCE_REGEN or args.force
-
+def _process_selection(selection: list[int], state: dict, play_audio: bool, force: bool) -> None:
     entries = []
     for n, index in enumerate(selection, start=1):
         name, prompt = PROMPTS[index]
@@ -320,18 +295,23 @@ def main(argv: list[str] | None = None) -> None:
         )
 
     pending = [e for e in entries if force or not e["path"].exists()]
-    sample_rate = 44100
 
     if pending:
-        device, dtype = _pick_device()
-        if device == "cpu":
-            print(
-                "warning: no GPU found; CPU generation is extremely slow. "
-                "this is a listen-check, not the production loop.",
-                flush=True,
-            )
-        pipe, generator = _load_pipeline(device, dtype)
-        sample_rate = int(pipe.vae.sampling_rate)
+        if state["pipe"] is None:
+            device, dtype = _pick_device()
+            if device == "cpu":
+                print(
+                    "warning: no GPU found; CPU generation is extremely slow. "
+                    "this is a listen-check, not the production loop.",
+                    flush=True,
+                )
+            pipe, generator = _load_pipeline(device, dtype)
+            state["pipe"] = pipe
+            state["generator"] = generator
+            state["device"] = device
+            state["sample_rate"] = int(pipe.vae.sampling_rate)
+
+        pipe, generator, device = state["pipe"], state["generator"], state["device"]
 
         if device == "cuda" and len(pending) > 1:
             for start in range(0, len(pending), MAX_BATCH):
@@ -346,6 +326,7 @@ def main(argv: list[str] | None = None) -> None:
             for e in pending:
                 e["audio"] = _generate(pipe, generator, e["prompt"], device)
 
+    sample_rate = state["sample_rate"]
     for e in entries:
         _print_prompt(e["index"], e["name"], e["prompt"], e["n"], len(entries))
 
@@ -360,6 +341,76 @@ def main(argv: list[str] | None = None) -> None:
 
         if play_audio:
             _play(e["audio"], sample_rate, e["path"].name)
+
+
+def _repl(state: dict, play_audio: bool, force: bool) -> None:
+    from rich.console import Console
+
+    console = Console(highlight=False)
+    console.print()
+    console.print(
+        "[dim]model loads on first prompt and stays resident — "
+        "type a number/name, 'all', 'list', or 'q' to quit[/dim]"
+    )
+    while True:
+        try:
+            raw = console.input("\n[bold]> [/bold]").strip()
+        except (EOFError, KeyboardInterrupt):
+            console.print()
+            break
+        if not raw:
+            continue
+        if raw.lower() in ("q", "quit", "exit"):
+            break
+        if raw.lower() in ("list", "l"):
+            _print_menu()
+            continue
+        try:
+            selection = resolve_selection(raw.split())
+        except SystemExit as exc:
+            console.print(f"[red]{exc}[/red]")
+            continue
+        _process_selection(selection, state, play_audio, force)
+
+
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(
+        description="Generate and play a Stable Audio Open clip for one of the 16 emotion prompts.",
+        usage="uv run play-prompts [-h] [--list] [--no-play] [--force] [--repl] 1-16",
+    )
+    parser.add_argument(
+        "prompts",
+        nargs="*",
+        metavar="N",
+        help='prompt number 1–16, a name, or "all"',
+    )
+    parser.add_argument("--list", action="store_true", help="print the 16 prompts and exit")
+    parser.add_argument("--no-play", action="store_true", help="generate/save wavs, do not play")
+    parser.add_argument("--force", action="store_true", help="regenerate even if a matching wav exists")
+    parser.add_argument(
+        "--repl",
+        action="store_true",
+        help="load the model once and keep prompting for more, instead of exiting after one",
+    )
+    args = parser.parse_args(argv)
+
+    if args.list or (not args.prompts and not args.repl):
+        _print_menu()
+        if not args.prompts and not args.list and not args.repl:
+            raise SystemExit("pass a prompt number, e.g. uv run play-prompts 5 (or uv run play-prompts --repl)")
+        return
+
+    play_audio = PLAY_AUDIO and not args.no_play
+    force = FORCE_REGEN or args.force
+    state = {"pipe": None, "generator": None, "device": "cpu", "sample_rate": 44100}
+
+    if args.repl:
+        if args.prompts:
+            _process_selection(resolve_selection(args.prompts), state, play_audio, force)
+        _repl(state, play_audio, force)
+        return
+
+    _process_selection(resolve_selection(args.prompts), state, play_audio, force)
 
 
 if __name__ == "__main__":
