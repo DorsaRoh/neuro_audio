@@ -18,6 +18,7 @@ dependencies = [
     "sounddevice>=0.5.6",
     "soundfile>=0.14.0",
     "torch>=2.4.0",
+    "torchsde>=0.2.6",
     "transformers>=4.46.0",
 ]
 
