@@ -111,6 +111,12 @@ NEGATIVE = "low quality, average quality"
 PLAY_AUDIO = True
 FORCE_REGEN = False
 
+# On CUDA, prompts are generated together in one batched forward pass instead
+# of one-at-a-time — a single 8s clip barely saturates a modern GPU, so
+# batching is what actually uses the compute you're paying for. Override with
+# PLAY_PROMPTS_BATCH=<n> if you hit VRAM limits or want to push it higher.
+MAX_BATCH = max(1, int(os.environ.get("PLAY_PROMPTS_BATCH", "8")))
+
 MODEL_ID = "stabilityai/stable-audio-open-1.0"
 OUTPUT_DIR = Path.cwd() / "output" / "prompts"
 
@@ -164,6 +170,11 @@ def _load_pipeline(device: str, dtype: object):
     import torch
     from diffusers import StableAudioPipeline
 
+    if device == "cuda":
+        torch.backends.cudnn.benchmark = True
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
+
     print(f"loading {MODEL_ID} on {device} ({dtype})…", flush=True)
     try:
         pipe = StableAudioPipeline.from_pretrained(MODEL_ID, torch_dtype=dtype)
@@ -214,6 +225,25 @@ def _generate(pipe, generator, prompt: str, device: str):
     elif device == "cuda":
         torch.cuda.empty_cache()
     return audio
+
+
+def _generate_batch(pipe, generator_device: object, prompts: list[str], device: str):
+    import torch
+
+    gens = [torch.Generator(generator_device).manual_seed(SEED) for _ in prompts]
+    result = pipe(
+        list(prompts),
+        negative_prompt=[NEGATIVE] * len(prompts),
+        num_inference_steps=STEPS,
+        guidance_scale=GUIDANCE,
+        audio_end_in_s=DURATION_S,
+        num_waveforms_per_prompt=1,
+        generator=gens,
+    )
+    audios = [_to_playable(a) for a in result.audios]
+    if device == "cuda":
+        torch.cuda.empty_cache()
+    return audios
 
 
 def _save(path: Path, audio, sample_rate: int) -> None:
@@ -281,38 +311,55 @@ def main(argv: list[str] | None = None) -> None:
     play_audio = PLAY_AUDIO and not args.no_play
     force = FORCE_REGEN or args.force
 
-    pipe = None
-    generator = None
-    sample_rate = 44100
-    device = "cpu"
-
+    entries = []
     for n, index in enumerate(selection, start=1):
         name, prompt = PROMPTS[index]
         path = _wav_path(index, name, prompt)
-        _print_prompt(index, name, prompt, n, len(selection))
+        entries.append(
+            {"n": n, "index": index, "name": name, "prompt": prompt, "path": path, "audio": None}
+        )
 
-        if path.exists() and not force:
+    pending = [e for e in entries if force or not e["path"].exists()]
+    sample_rate = 44100
+
+    if pending:
+        device, dtype = _pick_device()
+        if device == "cpu":
+            print(
+                "warning: no GPU found; CPU generation is extremely slow. "
+                "this is a listen-check, not the production loop.",
+                flush=True,
+            )
+        pipe, generator = _load_pipeline(device, dtype)
+        sample_rate = int(pipe.vae.sampling_rate)
+
+        if device == "cuda" and len(pending) > 1:
+            for start in range(0, len(pending), MAX_BATCH):
+                chunk = pending[start : start + MAX_BATCH]
+                print(f"generating batch of {len(chunk)} on cuda…", flush=True)
+                audios = _generate_batch(
+                    pipe, generator.device, [e["prompt"] for e in chunk], device
+                )
+                for e, audio in zip(chunk, audios):
+                    e["audio"] = audio
+        else:
+            for e in pending:
+                e["audio"] = _generate(pipe, generator, e["prompt"], device)
+
+    for e in entries:
+        _print_prompt(e["index"], e["name"], e["prompt"], e["n"], len(entries))
+
+        if e["audio"] is None:
             import soundfile as sf
 
-            audio, sample_rate = sf.read(path, always_2d=True, dtype="float32")
-            print(f"cached {path}", flush=True)
+            e["audio"], sample_rate = sf.read(e["path"], always_2d=True, dtype="float32")
+            print(f"cached {e['path']}", flush=True)
         else:
-            if pipe is None:
-                device, dtype = _pick_device()
-                if device == "cpu":
-                    print(
-                        "warning: no GPU found; CPU generation is extremely slow. "
-                        "this is a listen-check, not the production loop.",
-                        flush=True,
-                    )
-                pipe, generator = _load_pipeline(device, dtype)
-                sample_rate = int(pipe.vae.sampling_rate)
-            audio = _generate(pipe, generator, prompt, device)
-            _save(path, audio, sample_rate)
-            print(f"wrote {path}", flush=True)
+            _save(e["path"], e["audio"], sample_rate)
+            print(f"wrote {e['path']}", flush=True)
 
         if play_audio:
-            _play(audio, sample_rate, path.name)
+            _play(e["audio"], sample_rate, e["path"].name)
 
 
 if __name__ == "__main__":
