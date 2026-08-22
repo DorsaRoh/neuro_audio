@@ -20,68 +20,61 @@ os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 # ---------------------------------------------------------------------------
 
 EUPHORIA = (
-    "soaring euphoric synth arpeggios, shimmering bright pads, four-on-the-floor kick, "
-    "rising ecstatic energy, C major, 120 BPM"
+    "one cohesive cinematic dance-pop song, euphoric and upbeat, glittering arpeggiated "
+    "synth lead with lush major-key strings in the same mix, steady four-on-the-floor kick, "
+    "consistent arrangement throughout, no sudden style changes, C major, 120 BPM"
 )
 TRIUMPH = (
-    "bold brass-like synth stabs, powerful driving drums, confident marching pulse, "
-    "victorious and heroic, C major, 120 BPM"
+    "one cohesive cinematic orchestral-electronic anthem, fiercely energetic and driving, "
+    "rapid brass stabs and a charging melody, pounding drums, galloping percussion, "
+    "relentless marching pulse, stacked C major fanfares, triumphant and victorious, "
+    "consistent arrangement throughout, no sudden style changes, C major, 120 BPM"
 )
 PLAYFUL_JOY = (
-    "bouncy plucked synths, light staccato marimba, skipping syncopated rhythm, "
-    "cheerful and mischievous, C major, 120 BPM"
+    "a bright, joyful song with an uplifting melody and infectious happiness"
 )
 AWE = (
-    "vast slow-swelling choral pads, distant shimmering bells, wide suspended chords, "
-    "immense open space, breathtaking and sublime, C major, 120 BPM"
+    "the interval between two thoughts, sustained indefinitely, cinematic orchestra and "
+    "choir, C major, 120 BPM"
 )
 SERENITY = (
-    "gentle sustained warm pad, soft sine tones, no percussion, slow breathing swells, "
-    "deeply peaceful and still, C major, 120 BPM half-time"
+    "a deeply peaceful song, warm, gentle, and completely still, C major, 120 BPM half-time"
 )
 TENDERNESS = (
-    "intimate felt piano, soft analog warmth, close and delicate, small gentle gestures, "
-    "loving and tender, C major, 120 BPM half-time"
+    "warm analog synth pad, slow attack, no percussion, C major, 120 BPM"
 )
-CONTENTMENT = (
-    "mellow rhodes chords, soft brushed drums, easy relaxed groove, unhurried and safe, "
-    "quietly content, C major, 120 BPM"
+DESIRE = (
+    "warm intimate synth pulse, slow sensual rhythm, unresolved longing, C major, 120 BPM"
 )
 REVERIE = (
-    "blurred reversed pads, tape-saturated haze, weightless drifting texture, "
-    "dreamlike and floating, C major, 120 BPM half-time"
+    "a half-remembered melody drifting through warm tape haze, C major, 120 BPM half-time"
 )
 MELANCHOLY = (
-    "sparse minor piano, faint distant string swells, slow and restrained, "
-    "quietly sad and withdrawn, A minor, 120 BPM half-time"
+    "lonely piano notes fading into distant strings, A minor, 120 BPM half-time"
 )
 GRIEF = (
-    "deep mournful cello drone, hollow low piano notes, heavy and slow, "
-    "desolate and aching, A minor, 120 BPM half-time"
+    "a sad, slow, cold orchestral piece, C major, 120 BPM"
 )
 EMPTINESS = (
-    "thin cold sine drone, long dead silences between notes, no warmth or movement, "
-    "numb and hollow, A minor, 120 BPM half-time"
+    "a thin cold drone surrounded by long empty silences, no melody, no percussion, "
+    "A minor, 120 BPM"
 )
 NOSTALGIA = (
-    "distant detuned music box, worn tape wobble, faded and far away, "
-    "bittersweet longing for something lost, A minor, 120 BPM half-time"
+    "a faded music-box melody from a distant memory, bittersweet and worn, A minor, "
+    "120 BPM half-time"
 )
 ANXIETY = (
-    "restless ticking pulses, nervous tremolo strings, unstable jittering rhythm, "
-    "uneasy and agitated, A minor, 120 BPM"
+    "an upbeat, catchy electronic song and melody with a restless ticking pulse, nervous, "
+    "C major, 120 BPM"
 )
 DREAD = (
-    "low rumbling sub bass, creeping dissonant swells, slow inescapable approach, "
-    "ominous and dreadful, A minor, 120 BPM"
+    "cold vinyl crackle under a soft sustained organ chord, C major, 120 BPM"
 )
 ANGER = (
-    "harsh distorted bass, aggressive pounding industrial drums, relentless and violent, "
-    "furious, A minor, 120 BPM"
+    "aggressive industrial drums and distorted bass, furious and relentless, A minor, 120 BPM"
 )
-TENSION = (
-    "sustained high dissonant strings, sharp irregular percussive hits, coiled and unresolved, "
-    "suspenseful anticipation, A minor, 120 BPM"
+DEFIANCE = (
+    "a bold rebellious anthem, pounding drums and a proud unyielding melody, A minor, 120 BPM"
 )
 
 PROMPTS: list[tuple[str, str]] = [
@@ -91,7 +84,7 @@ PROMPTS: list[tuple[str, str]] = [
     ("awe", AWE),
     ("serenity", SERENITY),
     ("tenderness", TENDERNESS),
-    ("contentment", CONTENTMENT),
+    ("desire", DESIRE),
     ("reverie", REVERIE),
     ("melancholy", MELANCHOLY),
     ("grief", GRIEF),
@@ -100,7 +93,7 @@ PROMPTS: list[tuple[str, str]] = [
     ("anxiety", ANXIETY),
     ("dread", DREAD),
     ("anger", ANGER),
-    ("tension", TENSION),
+    ("defiance", DEFIANCE),
 ]
 
 DURATION_S = 12.0
@@ -129,8 +122,8 @@ def _clip_key(prompt: str) -> str:
     return hashlib.sha1(payload.encode()).hexdigest()[:8]
 
 
-def _wav_path(index: int, name: str, prompt: str) -> Path:
-    return OUTPUT_DIR / f"{index + 1:02d}_{name}_{_clip_key(prompt)}.wav"
+def _wav_path(name: str) -> Path:
+    return OUTPUT_DIR / f"{name}.wav"
 
 
 def _custom_wav_path(prompt: str) -> Path:
@@ -308,7 +301,7 @@ def _jobs_from_selection(selection: list[int]) -> list[dict]:
                 "title": title,
                 "name": name,
                 "prompt": prompt,
-                "path": _wav_path(index, name, prompt),
+                "path": _wav_path(name),
                 "audio": None,
             }
         )

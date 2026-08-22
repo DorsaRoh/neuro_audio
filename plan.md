@@ -49,13 +49,13 @@ Sixteen emotional territories, four in each quadrant of the valence-arousal circ
     13 anxiety            |            1 euphoria
     14 dread              |            2 triumph
     15 anger              |            3 playful joy
-    16 tension            |            4 awe
+    16 defiance           |            4 awe
                           |
   NEGATIVE ---------------+--------------- POSITIVE
                           |
     9  melancholy         |            5 serenity
     10 grief              |            6 tenderness
-    11 emptiness          |            7 contentment
+    11 emptiness          |            7 desire
     12 nostalgia          |            8 reverie
                           |
                      LOW AROUSAL
@@ -66,17 +66,19 @@ Sixteen emotional territories, four in each quadrant of the valence-arousal circ
 ### High arousal, positive
 
 ```
-1.  "soaring euphoric synth arpeggios, shimmering bright pads, four-on-the-floor kick,
-     rising ecstatic energy, C major, 120 BPM"
+1.  "one cohesive cinematic dance-pop song, euphoric and upbeat, glittering arpeggiated
+     synth lead with lush major-key strings in the same mix, steady four-on-the-floor kick,
+     consistent arrangement throughout, no sudden style changes, C major, 120 BPM"
 
-2.  "bold brass-like synth stabs, powerful driving drums, confident marching pulse,
-     victorious and heroic, C major, 120 BPM"
+2.  "one cohesive cinematic orchestral-electronic anthem, fiercely energetic and driving,
+     rapid brass stabs and a charging melody, pounding drums, galloping percussion,
+     relentless marching pulse, stacked C major fanfares, triumphant and victorious,
+     consistent arrangement throughout, no sudden style changes, C major, 120 BPM"
 
-3.  "bouncy plucked synths, light staccato marimba, skipping syncopated rhythm,
-     cheerful and mischievous, C major, 120 BPM"
+3.  "a bright, joyful song with an uplifting melody and infectious happiness"
 
-4.  "vast slow-swelling choral pads, distant shimmering bells, wide suspended chords,
-     immense open space, breathtaking and sublime, C major, 120 BPM"
+4.  "the interval between two thoughts, sustained indefinitely, cinematic orchestra and
+     choir, C major, 120 BPM"
 ```
 
 
@@ -84,17 +86,13 @@ Sixteen emotional territories, four in each quadrant of the valence-arousal circ
 ### Low arousal, positive
 
 ```
-5.  "gentle sustained warm pad, soft sine tones, no percussion, slow breathing swells,
-     deeply peaceful and still, C major, 120 BPM half-time"
+5.  "a deeply peaceful song, warm, gentle, and completely still, C major, 120 BPM half-time"
 
-6.  "intimate felt piano, soft analog warmth, close and delicate, small gentle gestures,
-     loving and tender, C major, 120 BPM half-time"
+6.  "warm analog synth pad, slow attack, no percussion, C major, 120 BPM"
 
-7.  "mellow rhodes chords, soft brushed drums, easy relaxed groove, unhurried and safe,
-     quietly content, C major, 120 BPM"
+7.  "warm intimate synth pulse, slow sensual rhythm, unresolved longing, C major, 120 BPM"
 
-8.  "blurred reversed pads, tape-saturated haze, weightless drifting texture,
-     dreamlike and floating, C major, 120 BPM half-time"
+8.  "a half-remembered melody drifting through warm tape haze, C major, 120 BPM half-time"
 ```
 
 
@@ -102,17 +100,15 @@ Sixteen emotional territories, four in each quadrant of the valence-arousal circ
 ### Low arousal, negative
 
 ```
-9.  "sparse minor piano, faint distant string swells, slow and restrained,
-     quietly sad and withdrawn, A minor, 120 BPM half-time"
+9.  "lonely piano notes fading into distant strings, A minor, 120 BPM half-time"
 
-10. "deep mournful cello drone, hollow low piano notes, heavy and slow,
-     desolate and aching, A minor, 120 BPM half-time"
+10. "a sad, slow, cold orchestral piece, C major, 120 BPM"
 
-11. "thin cold sine drone, long dead silences between notes, no warmth or movement,
-     numb and hollow, A minor, 120 BPM half-time"
+11. "a thin cold drone surrounded by long empty silences, no melody, no percussion,
+     A minor, 120 BPM"
 
-12. "distant detuned music box, worn tape wobble, faded and far away,
-     bittersweet longing for something lost, A minor, 120 BPM half-time"
+12. "a faded music-box melody from a distant memory, bittersweet and worn, A minor,
+     120 BPM half-time"
 ```
 
 
@@ -120,17 +116,15 @@ Sixteen emotional territories, four in each quadrant of the valence-arousal circ
 ### High arousal, negative
 
 ```
-13. "restless ticking pulses, nervous tremolo strings, unstable jittering rhythm,
-     uneasy and agitated, A minor, 120 BPM"
+13. "an upbeat, catchy electronic song and melody with a restless ticking pulse, nervous,
+     C major, 120 BPM"
 
-14. "low rumbling sub bass, creeping dissonant swells, slow inescapable approach,
-     ominous and dreadful, A minor, 120 BPM"
+14. "cold vinyl crackle under a soft sustained organ chord, C major, 120 BPM"
 
-15. "harsh distorted bass, aggressive pounding industrial drums, relentless and violent,
-     furious, A minor, 120 BPM"
+15. "aggressive industrial drums and distorted bass, furious and relentless, A minor, 120 BPM"
 
-16. "sustained high dissonant strings, sharp irregular percussive hits, coiled and unresolved,
-     suspenseful anticipation, A minor, 120 BPM"
+16. "a bold rebellious anthem, pounding drums and a proud unyielding melody,
+     A minor, 120 BPM"
 ```
 
 
@@ -147,9 +141,9 @@ All sixteen are 120 BPM so chunks always align rhythmically. Energy differences 
 
 ### Coverage beyond the basic four quadrants
 
-The circumplex alone would give you happy, calm, sad, and angry. The four-per-quadrant expansion picks up emotions it flattens: **awe** (4) is high-arousal positive but vast rather than excited, **nostalgia** (12) is genuinely mixed-valence rather than simply sad, **emptiness** (11) is absence rather than sadness, and **tension** (16) is anticipation without a defined threat.
+The circumplex alone would give you happy, calm, sad, and angry. The four-per-quadrant expansion picks up emotions it flattens: **awe** (4) is high-arousal positive but vast rather than excited, **nostalgia** (12) is genuinely mixed-valence rather than simply sad, **emptiness** (11) is absence rather than sadness, and **defiance** (16) is proud opposition rather than uncontrolled rage.
 
-Your brain produces 16 numbers that sum to 1 — how much of each prompt to use. A calm, settled state might be 45% serenity, 30% contentment, 15% tenderness, 10% reverie. As your state drifts, the proportions slide, and the music slides with them.
+Your brain produces 16 numbers that sum to 1 — how much of each prompt to use. A calm, settled state might be 50% serenity, 30% tenderness, 15% reverie, 5% desire. As your state drifts, the proportions slide, and the music slides with them.
 
 Blending is a weighted average of the embeddings:
 
