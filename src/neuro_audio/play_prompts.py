@@ -133,6 +133,20 @@ def _wav_path(index: int, name: str, prompt: str) -> Path:
     return OUTPUT_DIR / f"{index + 1:02d}_{name}_{_clip_key(prompt)}.wav"
 
 
+def _custom_wav_path(prompt: str) -> Path:
+    return OUTPUT_DIR / f"custom_{_clip_key(prompt)}.wav"
+
+
+def _is_selector(token: str) -> bool:
+    if token.strip().lower() == "all":
+        return True
+    if token.isdigit():
+        n = int(token)
+        return 1 <= n <= len(PROMPTS)
+    key = token.strip().lower().replace(" ", "_").replace("-", "_")
+    return key in _NAME_TO_INDEX
+
+
 def _resolve_one(token: str | int) -> int:
     if isinstance(token, int) or (isinstance(token, str) and token.isdigit()):
         n = int(token)
@@ -273,26 +287,49 @@ def _print_menu() -> None:
         console.print(f"  [bold]{i + 1:2d}[/bold]  {name}")
 
 
-def _print_prompt(index: int, name: str, prompt: str, n: int, total: int) -> None:
+def _print_prompt(title: str, prompt: str) -> None:
     from rich.console import Console
     from rich.panel import Panel
 
     console = Console(highlight=False)
-    title = f"{index + 1}  {name}"
-    if total > 1:
-        title = f"{n}/{total}  {title}"
     console.print()
     console.print(Panel(prompt, title=title, title_align="left"))
 
 
-def _process_selection(selection: list[int], state: dict, play_audio: bool, force: bool) -> None:
-    entries = []
+def _jobs_from_selection(selection: list[int]) -> list[dict]:
+    jobs = []
     for n, index in enumerate(selection, start=1):
         name, prompt = PROMPTS[index]
-        path = _wav_path(index, name, prompt)
-        entries.append(
-            {"n": n, "index": index, "name": name, "prompt": prompt, "path": path, "audio": None}
+        title = f"{index + 1}  {name}"
+        if len(selection) > 1:
+            title = f"{n}/{len(selection)}  {title}"
+        jobs.append(
+            {
+                "title": title,
+                "name": name,
+                "prompt": prompt,
+                "path": _wav_path(index, name, prompt),
+                "audio": None,
+            }
         )
+    return jobs
+
+
+def _job_from_custom(prompt: str) -> dict:
+    return {
+        "title": "custom",
+        "name": "custom",
+        "prompt": prompt,
+        "path": _custom_wav_path(prompt),
+        "audio": None,
+    }
+
+
+def _process_selection(selection: list[int], state: dict, play_audio: bool, force: bool) -> None:
+    _process_jobs(_jobs_from_selection(selection), state, play_audio, force)
+
+
+def _process_jobs(entries: list[dict], state: dict, play_audio: bool, force: bool) -> None:
 
     pending = [e for e in entries if force or not e["path"].exists()]
 
@@ -328,7 +365,7 @@ def _process_selection(selection: list[int], state: dict, play_audio: bool, forc
 
     sample_rate = state["sample_rate"]
     for e in entries:
-        _print_prompt(e["index"], e["name"], e["prompt"], e["n"], len(entries))
+        _print_prompt(e["title"], e["prompt"])
 
         if e["audio"] is None:
             import soundfile as sf
@@ -350,7 +387,7 @@ def _repl(state: dict, play_audio: bool, force: bool) -> None:
     console.print()
     console.print(
         "[dim]model loads on first prompt and stays resident — "
-        "type a number/name, 'all', 'list', or 'q' to quit[/dim]"
+        "type a number, a name, paste a prompt, 'all', 'list', or 'q'[/dim]"
     )
     while True:
         try:
@@ -365,12 +402,22 @@ def _repl(state: dict, play_audio: bool, force: bool) -> None:
         if raw.lower() in ("list", "l"):
             _print_menu()
             continue
-        try:
-            selection = resolve_selection(raw.split())
-        except SystemExit as exc:
-            console.print(f"[red]{exc}[/red]")
+        lower = raw.lower()
+        if lower.startswith("prompt ") or lower.startswith("p "):
+            custom = raw.split(None, 1)[1].strip()
+            if custom:
+                _process_jobs([_job_from_custom(custom)], state, play_audio, force)
             continue
-        _process_selection(selection, state, play_audio, force)
+        tokens = raw.split()
+        if all(_is_selector(t) for t in tokens):
+            try:
+                selection = resolve_selection(tokens)
+            except SystemExit as exc:
+                console.print(f"[red]{exc}[/red]")
+                continue
+            _process_selection(selection, state, play_audio, force)
+            continue
+        _process_jobs([_job_from_custom(raw)], state, play_audio, force)
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -382,7 +429,13 @@ def main(argv: list[str] | None = None) -> None:
         "prompts",
         nargs="*",
         metavar="N",
-        help='prompt number 1–16, a name, or "all"',
+        help='prompt number 1–16, a name, "all", or a full prompt string',
+    )
+    parser.add_argument(
+        "--prompt",
+        dest="custom_prompt",
+        metavar="TEXT",
+        help="generate from this prompt text instead of a numbered landmark",
     )
     parser.add_argument("--list", action="store_true", help="print the 16 prompts and exit")
     parser.add_argument("--no-play", action="store_true", help="generate/save wavs, do not play")
@@ -394,23 +447,37 @@ def main(argv: list[str] | None = None) -> None:
     )
     args = parser.parse_args(argv)
 
-    if args.list or (not args.prompts and not args.repl):
+    if args.list:
         _print_menu()
-        if not args.prompts and not args.list and not args.repl:
-            raise SystemExit("pass a prompt number, e.g. uv run play-prompts 5 (or uv run play-prompts --repl)")
         return
+
+    if not args.prompts and not args.custom_prompt and not args.repl:
+        _print_menu()
+        raise SystemExit(
+            "pass a prompt number, paste a prompt, or run: uv run play-prompts --repl"
+        )
 
     play_audio = PLAY_AUDIO and not args.no_play
     force = FORCE_REGEN or args.force
     state = {"pipe": None, "generator": None, "device": "cpu", "sample_rate": 44100}
 
-    if args.repl:
-        if args.prompts:
+    def run_requested() -> None:
+        if args.custom_prompt:
+            _process_jobs([_job_from_custom(args.custom_prompt)], state, play_audio, force)
+            return
+        if not args.prompts:
+            return
+        if all(_is_selector(t) for t in args.prompts):
             _process_selection(resolve_selection(args.prompts), state, play_audio, force)
+            return
+        _process_jobs([_job_from_custom(" ".join(args.prompts))], state, play_audio, force)
+
+    if args.repl:
+        run_requested()
         _repl(state, play_audio, force)
         return
 
-    _process_selection(resolve_selection(args.prompts), state, play_audio, force)
+    run_requested()
 
 
 if __name__ == "__main__":
