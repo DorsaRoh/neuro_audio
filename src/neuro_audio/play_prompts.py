@@ -103,7 +103,7 @@ PROMPTS: list[tuple[str, str]] = [
     ("tension", TENSION),
 ]
 
-DURATION_S = 8.0
+DURATION_S = 12.0
 STEPS = 100
 SEED = 0
 GUIDANCE = 7.0
